@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Yılan Oyunu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       margin: 0;
       background: #000;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 100vh;
@@ -17,21 +19,17 @@
     canvas {
       background-color: #111;
       border: 2px solid #0f0;
+      touch-action: none;
     }
 
     #skor {
-      position: absolute;
-      top: 10px;
-      left: 10px;
       color: #0f0;
       font-size: 20px;
+      margin: 10px;
     }
 
     #restartBtn {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      margin-top: 10px;
       padding: 15px 30px;
       font-size: 20px;
       background-color: #00cc00;
@@ -44,8 +42,7 @@
     }
 
     #temaBtn, #modBtn {
-      position: absolute;
-      bottom: 20px;
+      margin: 10px;
       padding: 10px 20px;
       font-size: 16px;
       background-color: #222;
@@ -56,8 +53,23 @@
       box-shadow: 0 0 5px #0f0;
     }
 
-    #temaBtn { right: 20px; }
-    #modBtn  { left: 20px; border-color: #f00; box-shadow: 0 0 5px #f00; }
+    .touch-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .touch-btn {
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      background-color: #333;
+      color: #0f0;
+      border: 1px solid #0f0;
+      border-radius: 10px;
+      text-align: center;
+      line-height: 60px;
+    }
   </style>
 </head>
 <body>
@@ -71,10 +83,18 @@
   <button id="temaBtn">🎨 Tema Değiştir</button>
   <button id="modBtn">🧱 Duvar Modu</button>
 
+  <div class="touch-controls">
+    <div class="touch-btn" id="upBtn">⬆️</div>
+  </div>
+  <div class="touch-controls">
+    <div class="touch-btn" id="leftBtn">⬅️</div>
+    <div class="touch-btn" id="downBtn">⬇️</div>
+    <div class="touch-btn" id="rightBtn">➡️</div>
+  </div>
+
   <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
-
     const gridSize = 20;
     let snake = [{ x: 200, y: 200 }];
     let direction = "RIGHT";
@@ -85,7 +105,6 @@
     let delay = 100;
     let bonusCounter = 0;
     let cherryCounter = 0;
-
     let duvarGecilsinMi = localStorage.getItem("duvarModu") === "gecisli";
 
     const skorSpan = document.getElementById("skorDeger");
@@ -104,32 +123,23 @@
     let temaIndex = parseInt(localStorage.getItem("temaIndex")) || 0;
     let drawTema = temalar[temaIndex];
 
-    const canvasElement = document.querySelector("canvas");
-    const temaBtn = document.getElementById("temaBtn");
-    const modBtn = document.getElementById("modBtn");
-
-    temaBtn.onclick = () => {
+    document.getElementById("temaBtn").onclick = () => {
       temaIndex = (temaIndex + 1) % temalar.length;
       localStorage.setItem("temaIndex", temaIndex);
       drawTema = temalar[temaIndex];
-      canvasElement.style.backgroundColor = drawTema.arka;
-      canvasElement.style.borderColor = drawTema.cerceve;
+      canvas.style.backgroundColor = drawTema.arka;
+      canvas.style.borderColor = drawTema.cerceve;
     };
 
-    modBtn.onclick = () => {
+    document.getElementById("modBtn").onclick = () => {
       duvarGecilsinMi = !duvarGecilsinMi;
       localStorage.setItem("duvarModu", duvarGecilsinMi ? "gecisli" : "olumlu");
-      modBtn.innerText = duvarGecilsinMi
-        ? "🧱 Duvar Modu: Geçişli"
-        : "🧱 Duvar Modu: Ölümlü";
+      document.getElementById("modBtn").innerText = duvarGecilsinMi ? "🧱 Duvar Modu: Geçişli" : "🧱 Duvar Modu: Ölümlü";
     };
 
-    modBtn.innerText = duvarGecilsinMi
-      ? "🧱 Duvar Modu: Geçişli"
-      : "🧱 Duvar Modu: Ölümlü";
-
-    canvasElement.style.backgroundColor = drawTema.arka;
-    canvasElement.style.borderColor = drawTema.cerceve;
+    document.getElementById("modBtn").innerText = duvarGecilsinMi ? "🧱 Duvar Modu: Geçişli" : "🧱 Duvar Modu: Ölümlü";
+    canvas.style.backgroundColor = drawTema.arka;
+    canvas.style.borderColor = drawTema.cerceve;
 
     function drawYem(x, y, emoji = "🍎") {
       ctx.font = `${gridSize}px serif`;
@@ -141,7 +151,7 @@
     function randomFood() {
       return {
         x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize,
-        y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize,
+        y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize
       };
     }
 
@@ -164,6 +174,12 @@
       else if (e.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
     });
 
+    // Mobil buton yönleri
+    document.getElementById("upBtn").onclick = () => direction = direction !== "DOWN" ? "UP" : direction;
+    document.getElementById("downBtn").onclick = () => direction = direction !== "UP" ? "DOWN" : direction;
+    document.getElementById("leftBtn").onclick = () => direction = direction !== "RIGHT" ? "LEFT" : direction;
+    document.getElementById("rightBtn").onclick = () => direction = direction !== "LEFT" ? "RIGHT" : direction;
+
     function gameLoop() {
       const head = { ...snake[0] };
 
@@ -176,7 +192,7 @@
         if (
           head.x < 0 || head.x >= canvas.width ||
           head.y < 0 || head.y >= canvas.height ||
-          snake.some(segment => segment.x === head.x && segment.y === head.y)
+          snake.some(s => s.x === head.x && s.y === head.y)
         ) {
           restartBtn.style.display = "block";
           return;
@@ -184,11 +200,9 @@
       } else {
         if (head.x < 0) head.x = canvas.width - gridSize;
         else if (head.x >= canvas.width) head.x = 0;
-
         if (head.y < 0) head.y = canvas.height - gridSize;
         else if (head.y >= canvas.height) head.y = 0;
-
-        if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+        if (snake.some(s => s.x === head.x && s.y === head.y)) {
           restartBtn.style.display = "block";
           return;
         }
@@ -204,35 +218,27 @@
         cherryCounter++;
         maybeSpawnBonus();
         maybeSpawnCherry();
-
-        if (skor % 5 === 0 && delay > 30) {
-          delay -= 5;
-        }
-
+        if (skor % 5 === 0 && delay > 30) delay -= 5;
         if (skor > enYuksekSkor) {
           enYuksekSkor = skor;
           localStorage.setItem("enYuksekSkor", enYuksekSkor);
           enYuksekSkorSpan.innerText = enYuksekSkor;
         }
-
       } else if (bonusFood && head.x === bonusFood.x && head.y === bonusFood.y) {
         skor += 5;
         skorSpan.innerText = skor;
         bonusFood = null;
-
       } else if (cherryFood && head.x === cherryFood.x && head.y === cherryFood.y) {
         skor += 2;
         skorSpan.innerText = skor;
         cherryFood = null;
         if (delay > 30) delay -= 10;
-
       } else {
         snake.pop();
       }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 🌈 Skora göre yılan rengi
       let yilanRenk, govdeRenk;
       if (skor < 10) {
         yilanRenk = "#0f0";
@@ -248,9 +254,9 @@
         govdeRenk = "#808";
       }
 
-      snake.forEach((segment, i) => {
+      snake.forEach((s, i) => {
         ctx.fillStyle = i === 0 ? yilanRenk : govdeRenk;
-        ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
+        ctx.fillRect(s.x, s.y, gridSize, gridSize);
       });
 
       drawYem(food.x, food.y, "🍎");
